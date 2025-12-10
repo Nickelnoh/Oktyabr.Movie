@@ -256,7 +256,7 @@ function show(name){
 
 <script>
 const firebaseConfig = {
-  apiKey: "AIzaSyBBcbikGM6z2CI1SWZgxhlbpLo4at2lTIE",
+  apiKey: localStorage.getItem("fb-key"),
   authDomain: "ortyabr.firebaseapp.com",
   databaseURL: "https://ortyabr-default-rtdb.firebaseio.com",
   projectId: "ortyabr",
@@ -589,3 +589,4 @@ renderCatalog();
 </script>
 </body>
 </html>
+
