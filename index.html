@@ -270,7 +270,13 @@ const firebaseConfig = {
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
   const db = firebase.database();
-
+  // Инициализация Firebase
+  try {
+    firebase.initializeApp(firebaseConfig);
+    console.log("Firebase initialized");
+  } catch (e) {
+    console.error("Ошибка инициализации Firebase:", e);
+  }
 
 
 /* ========== FILMS + sessions (из вашего скриншота) ==========
@@ -589,4 +595,5 @@ renderCatalog();
 </script>
 </body>
 </html>
+
 
