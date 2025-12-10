@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Кинотеатр «Октябрь» — расписание</title>
+<style>
+  :root{
+    --neon-blue:#00eaff; --neon-pink:#ff33d8;
+    --card-radius:12px;
+  }
+  body{margin:0;font-family:Inter,Segoe UI,Roboto,Arial;background:#e9f5ff;color:#071228;transition:background .3s,color .3s}
+  body.dark{background:#071025;color:#e6eefc}
+  header{position:sticky;top:0;background:rgba(255,255,255,0.6);backdrop-filter:blur(6px);display:flex;justify-content:space-between;align-items:center;padding:10px 16px;z-index:40;border-bottom:1px solid rgba(10,20,40,0.04)}
+  .tabs{display:flex;gap:10px}
+  .tab{padding:8px 12px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--neon-blue),var(--neon-pink));color:#001827;font-weight:700;cursor:pointer;box-shadow:0 6px 24px rgba(0,0,0,0.08)}
+  .container{max-width:1100px;margin:18px auto;padding:0 14px 80px}
+  h1{margin:0;font-size:20px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+  .card{background:rgba(255,255,255,0.9);border-radius:var(--card-radius);padding:12px;border:1px solid rgba(0,0,0,0.04);box-shadow:0 10px 30px rgba(5,16,38,0.06)}
+  body.dark .card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.03)}
+  ..poster {
+  width: 100%;                  /* занять всю ширину карточки */
+  aspect-ratio: 3 / 4;          /* фиксированное соотношение сторон 3:4 */
+  border-radius: 10px;
+  background-size: cover;        /* растягивает/обрезает картинку, сохраняя пропорции */
+  background-position: center;   /* центрирует картинку */
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: transparent;            /* скрываем текст названия внутри постера */
+}
+  .title{font-weight:800;margin:0 0 6px 0}
+  .meta{color:#7789a8;font-size:13px;margin-bottom:8px}
+  .btn{display:inline-block;padding:9px 12px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--neon-pink),var(--neon-blue));color:white;font-weight:800;cursor:pointer}
+  .small-link{font-size:13px;color:#0b76ff;text-decoration:underline;background:none;border:none;cursor:pointer;padding:0}
+  /* popup */
+  .popup-bg{position:fixed;inset:0;background:rgba(4,8,16,0.6);display:none;align-items:center;justify-content:center;z-index:80}
+  .popup{width:92%;max-width:480px;background:var(--card-bg,#fff);padding:18px;border-radius:12px;box-shadow:0 30px 80px rgba(6,12,32,0.6)}
+  .row{display:flex;gap:8px}
+  select,input{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(10,20,40,0.06)}
+  .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
+  .ghost{background:transparent;border:1px solid rgba(10,20,40,0.06);padding:8px 10px;border-radius:8px;cursor:pointer}
+  footer{text-align:center;color:#7b8aa3;margin-top:18px;padding-bottom:40px}
+  /* responsive */
+  @media(max-width:600px){
+    header{padding:10px}
+    .poster{height:120px}
+    .tabs{gap:6px}
+  }
+</style>
+</head>
+<body class="light">
+
+<header style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;background:rgba(255,255,255,0.6);backdrop-filter:blur(6px);border-bottom:1px solid rgba(0,0,0,0.1);">
+  <!-- Левый блок: вкладки + кнопка темы -->
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div class="tabs" style="display:flex;gap:6px;">
+      <button class="tab" onclick="show('catalog')">Каталог</button>
+      <button class="tab" onclick="show('profile')">Профиль</button>
+      <button class="tab" onclick="show('auth')">Войти / Регистрация</button>
+      <button class="tab" onclick="show('about')">О нас</button>
+    </div>
+
+    <!-- Кнопка смены темы -->
+    <button id="themeBtn" style="
+      margin-left:10px;
+      padding:10px 14px;
+      border-radius:12px;
+      border:none;
+      background:linear-gradient(135deg,var(--neon-blue),var(--neon-pink));
+      color:white;
+      font-weight:800;
+      cursor:pointer;
+      box-shadow:0 4px 12px rgba(0,0,0,0.2);
+      transition:transform 0.2s;
+    " title="Смена темы" 
+    onmouseover="this.style.transform='scale(1.05)'" 
+    onmouseout="this.style.transform='scale(1)'">
+      Тема
+    </button>
+  </div>
+
+  <!-- Правый блок: ник пользователя -->
+  <div id="userInfo" style="
+      font-size:14px;
+      font-weight:bold;
+      color:#1a1a1a;
+      text-align:right;
+      padding:6px 12px;
+      border-radius:6px;
+      min-width:120px;
+  ">
+    не авторизован(-а)
+  </div>
+</header>
+
+<div class="container">
+  <!-- CATALOG -->
+  <section id="catalogSection">
+    <h2 style="margin-top:6px">Каталог — сеансы из вашего скриншота</h2>
+    <div id="grid" class="grid" style="margin-top:10px"></div>
+  </section>
+
+<!-- PROFILE -->
+<section id="profileSection" style="display:none">
+  <h2>Профиль — купленные билеты</h2>
+
+  <div style="max-width:420px; margin-bottom:16px">
+    <label>Никнейм:</label>
+    <input id="nicknameInput" placeholder="Введите никнейм" style="margin-bottom:8px"/>
+    <button class="btn" onclick="saveNickname()">Сохранить ник</button>
+  </div>
+
+  <div id="ticketsList"></div>
+</section>
+
+<script>
+/* ========== Загрузка и отображение никнейма ========== */
+function updateUserInfo(user) {
+  if (!user) return;
+  const nicknameInput = document.getElementById('nicknameInput');
+  if (!nicknameInput) return;
+
+  // Загружаем никнейм из базы
+  db.ref('users/' + user.uid + '/nickname').once('value').then(snap => {
+    nicknameInput.value = snap.val() || '';
+  });
+}
+
+/* ========== Сохранение никнейма ========== */
+function saveNickname() {
+  const user = auth.currentUser;
+  if (!user) { alert('Сначала войдите'); show('auth'); return; }
+
+  const nickname = document.getElementById('nicknameInput').value.trim();
+  if (!nickname) { alert('Введите никнейм'); return; }
+
+  db.ref('users/' + user.uid + '/nickname').set(nickname)
+    .then(() => { alert('Никнейм сохранён'); })
+    .catch(err => { alert('Ошибка при сохранении: ' + err.message); });
+}
+
+/* ========== Обновление никнейма при открытии профиля ========== */
+function show(name){
+  document.getElementById('catalogSection').style.display='none';
+  document.getElementById('profileSection').style.display='none';
+  document.getElementById('authSection').style.display='none';
+  document.getElementById('aboutSection').style.display='none';
+
+  if(name==='catalog') document.getElementById('catalogSection').style.display='';
+  if(name==='profile') {
+    document.getElementById('profileSection').style.display='';
+    updateUserInfo(auth.currentUser); // поле точно существует
+  }
+  if(name==='auth') document.getElementById('authSection').style.display='';
+  if(name==='about') document.getElementById('aboutSection').style.display='';
+}
+</script>
+
+
+<script>
+/* ========== Загрузка и отображение никнейма ========== */
+function updateUserInfo(user) {
+  if (!user) return;
+  const nicknameInput = document.getElementById('nicknameInput');
+  if (!nicknameInput) return;
+
+  // Загружаем никнейм из базы
+  db.ref('users/' + user.uid + '/nickname').once('value').then(snap => {
+    nicknameInput.value = snap.val() || '';
+  });
+}
+
+/* ========== Сохранение никнейма ========== */
+function saveNickname() {
+  const user = auth.currentUser;
+  if (!user) { alert('Сначала войдите'); show('auth'); return; }
+
+  const nickname = document.getElementById('nicknameInput').value.trim();
+  if (!nickname) { alert('Введите никнейм'); return; }
+
+  db.ref('users/' + user.uid + '/nickname').set(nickname)
+    .then(() => { alert('Никнейм сохранён'); })
+    .catch(err => { alert('Ошибка при сохранении: ' + err.message); });
+}
+
+/* ========== Обновление никнейма при открытии профиля ========== */
+function show(name){
+  document.getElementById('catalogSection').style.display='none';
+  document.getElementById('profileSection').style.display='none';
+  document.getElementById('authSection').style.display='none';
+  document.getElementById('aboutSection').style.display='none';
+
+  if(name==='catalog') document.getElementById('catalogSection').style.display='';
+  if(name==='profile') {
+    document.getElementById('profileSection').style.display='';
+    updateUserInfo(auth.currentUser); // поле точно существует
+  }
+  if(name==='auth') document.getElementById('authSection').style.display='';
+  if(name==='about') document.getElementById('aboutSection').style.display='';
+}
+</script>
+
+
+  <!-- AUTH -->
+  <section id="authSection" style="display:none">
+    <h2>Войти / Зарегистрироваться</h2>
+    <div style="max-width:420px">
+      <input id="authEmail" placeholder="Email" style="margin-bottom:8px"/><br>
+      <input id="authPass" placeholder="Пароль" type="password" style="margin-bottom:8px"/><br>
+      <button class="btn" onclick="register()">Зарегистрироваться</button>
+      <button class="btn" style="margin-left:8px" onclick="login()">Войти</button>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section id="aboutSection" style="display:none">
+    <h2>О нас</h2>
+    <p><strong>Адрес:</strong> ул. Приморского Комсомола, 2, Большой Камень, Приморский край, 692806</p>
+    <p><strong>Телефон:</strong> 8 (423) 355-73-73</p>
+  </section>
+</div>
+
+<footer>© Кинотеатр «Октябрь»</footer>
+
+<!-- POPUP -->
+<div id="popupBg" class="popup-bg" onclick="closePopup(event)">
+  <div class="popup" onclick="event.stopPropagation()">
+    <h3 id="popupTitle">Покупка билета</h3>
+
+    <label>Сеанс (дата и время)</label>
+    <select id="popupSession"></select>
+
+    <label>Ряд</label>
+    <select id="popupRow"></select>
+
+    <label>Место</label>
+    <select id="popupSeat"></select>
+
+    <div style="margin-top:8px" id="popupPrice" class="meta"></div>
+
+    <div class="actions">
+      <button class="ghost" onclick="closePopup()">Отмена</button>
+      <button class="btn" onclick="confirmPurchase()">Купить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBBcbikGM6z2CI1SWZgxhlbpLo4at2lTIE",
+  authDomain: "ortyabr.firebaseapp.com",
+  databaseURL: "https://ortyabr-default-rtdb.firebaseio.com",
+  projectId: "ortyabr",
+  storageBucket: "ortyabr.firebasestorage.app",
+  messagingSenderId: "325424235851",
+  appId: "1:325424235851:web:f80a11cc238f29974914ce",
+  measurementId: "G-XZ1D6PVFG9"
+};
+
+  // Инициализация Firebase
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.database();
+
+
+
+/* ========== FILMS + sessions (из вашего скриншота) ==========
+
+Столбцы: понедельник 08.12, вторник 09.12, среда 10.12
+Точное расписание извлечено с присланного скрина.
+*/
+const films = [
+  {
+    id: 'elf',
+    title: 'Эльф и украденное Рождество',
+    posterPage: 'https://www.kino-teatr.ru/movie/poster/8/9/201398/pv_266100.jpg', // источник постеров
+    price: 250,
+    sessions: [
+      '08.12 — 10:00',
+      '09.12 — 11:30',
+      '10.12 — 16:20 (последний сеанс)'
+    ]
+  },
+  {
+    id: 'masha',
+    title: 'Маша и Медведи',
+    posterPage: 'https://www.kino-teatr.ru/movie/poster/185903/230790.jpg', // постеры/страница
+    price: 300,
+    sessions: [
+      '08.12 — 11:50',
+      '09.12 — 10:00',
+      '10.12 — 18:10 (последний сеанс)'
+    ]
+  },
+  {
+    id: 'volchok',
+    title: 'Волчок',
+    posterPage: 'https://www.kino-teatr.ru/movie/poster/171563/268205.jpg',
+    price: 250,
+    sessions: [
+      '08.12 — 13:20',
+      '08.12 — 17:40',
+      '09.12 — 13:20',
+      '09.12 — 17:40',
+      '10.12 — 10:00',
+      '10.12 — 22:00'
+    ]
+  },
+  {
+    id: 'shalnaya',
+    title: 'Шальная императрица',
+    posterPage: 'https://www.kino-teatr.ru/movie/poster/201799/268202.jpg',
+    price: 350,
+    sessions: [
+      '08.12 — 15:40',
+      '09.12 — 20:00',
+      '10.12 — 14:20'
+    ]
+  },
+  {
+    id: 'semyanin',
+    title: 'Семьянин',
+    posterPage: 'https://www.kino-teatr.ru/movie/poster/3/9/193693/pv_266344.jpg',
+    price: 300,
+    sessions: [
+      '08.12 — 20:00',
+      '09.12 — 15:40',
+      '10.12 — 12:20'
+    ]
+  },
+  {
+    id: 'astral',
+    title: 'Астрал: 13 инкарнаций зла',
+    posterPage: 'https://www.kino-teatr.ru/movie/poster/6/8/192086/pv_237921.jpg',
+    price: 400,
+    sessions: [
+      '08.12 — 22:00',
+      '09.12 — 22:00',
+      '10.12 — 22:00'
+    ]
+  },
+  {
+    id: 'esttolkomig',
+    title: 'Есть только Миг',
+    posterPage: 'https://www.kino-teatr.ru/movie/poster/6/8/189386/pv_263454.jpg',
+    price: 400,
+    sessions: [
+      '10.12 — 19:50'
+    ]
+  }
+];
+
+/* ========== UI: отрисовка каталога ========== */
+const grid = document.getElementById('grid');
+
+function renderCatalog(){
+  grid.innerHTML = '';
+  films.forEach(f=>{
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;text-align:center">
+        <div class="poster" style="
+          width:100%;
+          aspect-ratio:3/4; /* фиксированное соотношение сторон */
+          border-radius:10px;
+          background-image:url('${f.posterPage}');
+          background-size:cover;
+          background-position:center;
+          margin-bottom:10px;
+          color:transparent;
+        ">
+          ${f.title}
+        </div>
+        <div style="width:100%">
+          <div class="title">${f.title}</div>
+          <div class="meta">Цена: ${f.price} руб</div>
+          <div style="margin-top:8px">
+            <strong>Сеансы (выберите при покупке):</strong>
+            <ul id="sess-${f.id}" style="margin:6px 0 0 0;padding:0;color:#5f748f;list-style:none"></ul>
+          </div>
+          <div style="margin-top:10px;display:flex;justify-content:center;width:100%">
+            <button class="btn" onclick="openBuy('${f.id}')">Купить билет</button>
+          </div>
+        </div>
+      </div>
+    `;
+    grid.appendChild(card);
+
+    const ul = document.getElementById('sess-' + f.id);
+    f.sessions.forEach(s => {
+      const li = document.createElement('li');
+      li.style.marginBottom='4px';
+      li.textContent = s;
+      ul.appendChild(li);
+    });
+  });
+}
+
+
+renderCatalog();
+
+/* ========== popup logic: sessions, rows 1-10, seats 1-50 ========= */
+let chosenFilmId = null;
+function openBuy(filmId){
+  chosenFilmId = filmId;
+  const film = films.find(x=>x.id===filmId);
+  document.getElementById('popupTitle').innerText = `Покупка — ${film.title}`;
+  const sess = document.getElementById('popupSession');
+  sess.innerHTML = '';
+  film.sessions.forEach(s => {
+    const opt = document.createElement('option'); opt.value = s; opt.textContent = s; sess.appendChild(opt);
+  });
+  // rows 1..10
+  const row = document.getElementById('popupRow');
+  row.innerHTML = '';
+  for(let r=1;r<=10;r++){ const o=document.createElement('option'); o.value=r; o.textContent='Ряд '+r; row.appendChild(o); }
+  // seats 1..50
+  const seat = document.getElementById('popupSeat');
+  seat.innerHTML = '';
+  for(let s=1;s<=50;s++){ const o=document.createElement('option'); o.value=s; o.textContent='Место '+s; seat.appendChild(o); }
+
+  document.getElementById('popupBg').style.display = 'flex';
+  document.getElementById('popupPrice').innerText = `Цена: ${film.price} руб.`;
+}
+function updateUserInfo(user){
+  const userDiv = document.getElementById('userInfo');
+  if(!user){
+    userDiv.textContent = 'Гость';
+    return;
+  }
+  // загружаем никнейм из базы
+  db.ref('users/' + user.uid + '/nickname').once('value').then(snap=>{
+    if(snap.exists() && snap.val().trim() !== ''){
+      userDiv.textContent = snap.val();
+    } else {
+      userDiv.textContent = user.email;
+    }
+  });
+}
+
+function closePopup(e){
+  // если кликнули по затемнению или отмена
+  if(!e || e.target && e.target.id==='popupBg') document.getElementById('popupBg').style.display='none';
+}
+
+/* ========== Purchase: save to RTDB under users/{uid}/tickets ========== */
+async function confirmPurchase(){
+  const user = auth.currentUser;
+  if(!user){ alert('Сначала войдите'); show('auth'); return; }
+  const film = films.find(x=>x.id===chosenFilmId);
+  const session = document.getElementById('popupSession').value;
+  const row = document.getElementById('popupRow').value;
+  const seat = document.getElementById('popupSeat').value;
+
+  const ticket = {
+    film: film.title,
+    filmId: film.id,
+    session, row, seat,
+    price: film.price,
+    createdAt: new Date().toISOString()
+  };
+  const p = await db.ref('users/' + user.uid + '/tickets').push(ticket);
+  document.getElementById('popupBg').style.display='none';
+  loadTickets();
+  alert('Билет куплен и сохранён в профиле');
+}
+
+/* ========== AUTH (simple email/password) ========== */
+function register(){
+  const email = document.getElementById('authEmail').value;
+  const pass = document.getElementById('authPass').value;
+  if(!email||!pass){alert('Введите email и пароль');return;}
+  auth.createUserWithEmailAndPassword(email,pass).then(()=>{ alert('Зарегистрированы'); show('catalog') }).catch(e=>alert(e.message));
+}
+function login(){
+  const email = document.getElementById('authEmail').value;
+  const pass = document.getElementById('authPass').value;
+  if(!email||!pass){alert('Введите email и пароль');return;}
+  auth.signInWithEmailAndPassword(email,pass).then(()=>{ alert('Вход выполнен'); show('profile') }).catch(e=>alert(e.message));
+}
+auth.onAuthStateChanged(user=>{
+  updateUserInfo(user);  // <-- обновляем ник/Email
+  if(user){ loadTickets(); }
+});
+
+/* ========== load tickets into profile ========== */
+function loadTickets(){
+  const user = auth.currentUser;
+  const list = document.getElementById('ticketsList');
+  list.innerHTML = '';
+  if(!user){ list.innerHTML = '<div class="card">Войдите, чтобы видеть купленные билеты</div>'; return; }
+  db.ref('users/' + user.uid + '/tickets').on('value', snap=>{
+    list.innerHTML = '';
+    if(!snap.exists()){ list.innerHTML = '<div class="card">Пока нет купленных билетов</div>'; return; }
+    snap.forEach(child=>{
+      const t = child.val();
+      const el = document.createElement('div'); el.className='card';
+      el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:800">${t.film}</div>
+          <div class="meta">${t.session} • Ряд ${t.row} • Место ${t.seat}</div>
+          <div class="meta">Цена: ${t.price} руб</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:12px;color:#99a8c4">${new Date(t.createdAt).toLocaleString()}</div>
+          <button class="ghost" onclick="deleteTicket('${child.key}')">Удалить</button>
+        </div>
+      </div>`;
+      list.appendChild(el);
+    });
+  });
+}
+function saveNickname(){
+  const user = auth.currentUser;
+  if(!user){
+    alert('Сначала войдите');
+    show('auth');
+    return;
+  }
+  const nickname = document.getElementById('nicknameInput').value.trim();
+  if(!nickname){
+    alert('Введите никнейм');
+    return;
+  }
+ db.ref('users/' + user.uid + '/nickname').set(nickname)
+  .then(()=>{
+    alert('Никнейм сохранён');
+    updateUserInfo(user); // <-- обновляем шапку
+  });
+}
+
+/* ====== Обновление отображения пользователя ====== */
+function updateUserInfo(user){
+  const userDiv = document.getElementById('userInfo');
+  if(!user){
+    userDiv.textContent = 'Гость';
+    document.getElementById('nicknameInput').value = '';
+    return;
+  }
+  // Получаем никнейм из Firebase
+  db.ref('users/' + user.uid + '/nickname').once('value').then(snap=>{
+    if(snap.exists() && snap.val().trim() !== ''){
+      userDiv.textContent = snap.val();
+      document.getElementById('nicknameInput').value = snap.val();
+    } else {
+      userDiv.textContent = user.email;
+      document.getElementById('nicknameInput').value = '';
+    }
+  });
+}
+function deleteTicket(key){
+  const user = auth.currentUser;
+  if(!user) return;
+  if(!confirm('Удалить билет?')) return;
+  db.ref('users/' + user.uid + '/tickets/' + key).remove();
+}
+
+/* ========== simple UI switching ========== */
+function show(name){
+  document.getElementById('catalogSection').style.display='none';
+  document.getElementById('profileSection').style.display='none';
+  document.getElementById('authSection').style.display='none';
+  document.getElementById('aboutSection').style.display='none';
+  if(name==='catalog') document.getElementById('catalogSection').style.display='';
+  if(name==='profile') document.getElementById('profileSection').style.display='';
+  if(name==='auth') document.getElementById('authSection').style.display='';
+  if(name==='about') document.getElementById('aboutSection').style.display='';
+}
+/* default open catalog */
+show('catalog');
+
+/* theme toggle */
+document.getElementById('themeBtn').onclick = ()=>{
+  document.body.classList.toggle('dark');
+}
+
+/* ========== initial render ========== */
+renderCatalog();
+</script>
+</body>
+</html>
